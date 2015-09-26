@@ -1,0 +1,49 @@
+---
+title: "Machine Learning"
+output: word_document
+---
+
+##Executive Summary
+We are building a machine learning algorithm for predicting the manner of different excercises being done. We are using training and testing dataset extracted with the help of accelerometers.
+
+##Initial preprocessing of the dataset
+
+We are loading the downloaded dataset, removing unrelated data (timestamps, window and user-related data and data where more than half of the values are NA or 0) and preparing for cross validation on the train dataset by splitting it into training and testing (70% to 30%). 
+
+```{r}
+library(caret)
+setwd("C:/Users/Malni/Documents/Coursera/Projekt8")
+train<-read.csv("pml-training.csv",na.strings=c("NA",""))
+NA_No <- apply(train, 2, function(x) {sum(is.na(x))})
+keep<-NA_No<length(train)/2
+train<-train[,keep]
+train<-train[,-c(1,2,3,4,5,6,7)]
+train$classe<-as.factor(train$classe)
+test<-read.csv("pml-testing.csv")
+test<-test[,keep]
+test<-test[,-c(1,2,3,4,5,6,7)]
+set.seed(300)
+inTrain<-createDataPartition(y=train$classe,p=0.7,list=FALSE)
+training<-train[inTrain,]
+testing<-train[-inTrain,]
+```
+
+##Building the model  
+
+We are building a random forest model, which is one of the two top-performing algorithms, although it is computation-intensive. 
+
+```{r modelbuilding, cache=TRUE}
+set.seed(300)
+modFit.rf<-train(classe~.,method="rf",data=training)
+modFit.rf$finalMod
+```
+
+##Out of Sample Error
+We use cross validation to check the accuracy of the model and estimate the out-of-sample error rate. According to our estimate, the accuracy of the model is 99% and the out-of-sample error rate is less than 1%.
+```{r}
+prediction<-predict(modFit.rf,newdata=testing)
+accur<-sum(prediction==testing$classe)/length(prediction)
+accur
+outOfSampleError<-1-accur
+outOfSampleError
+```
